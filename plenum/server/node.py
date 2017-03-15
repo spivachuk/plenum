@@ -663,6 +663,12 @@ class Node(HasActionQueue, Motor, Propagator, MessageProcessor, HasFileStorage,
             if self.mode in (Mode.discovered, Mode.participating):
                 self.sendDomainLedgerStatus(n)
 
+        # Initiate an election of a new primary if the current primary
+        # has gone down
+        for n in left:
+            if isinstance(self.poolManager, TxnPoolManager):
+                self.poolManager.doElectionIfNeeded(n)
+
     def newNodeJoined(self, txn):
         self.setF()
         if self.adjustReplicas() > 0:

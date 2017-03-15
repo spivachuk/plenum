@@ -143,11 +143,13 @@ class Stack(RoadStack):
 
     def _serviceStack(self, age):
         """
-        Update stacks clock and service all tx and rx messages.
+        Update stacks clock, enqueue keep-alive heartbeat messages
+        and service all tx and rx messages.
 
         :param age: update timestamp of this RoadStack to this value
         """
         self.updateStamp(age)
+        self.manage()
         self.serviceAll()
 
     def updateStamp(self, age=None):
