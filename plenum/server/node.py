@@ -182,7 +182,7 @@ class Node(HasActionQueue, Motor, Propagator, MessageProcessor, HasFileStorage,
 
         self.rank = self.getRank(self.name, self.nodeReg)
 
-        self.elector = None  # type: PrimaryDecider
+        self.elector = self.newPrimaryDecider()  # type: PrimaryDecider
 
         self.forwardedRequests = set()  # type: Set[Tuple[(str, int)]]
 
@@ -468,8 +468,6 @@ class Node(HasActionQueue, Motor, Propagator, MessageProcessor, HasFileStorage,
             self.nodestack.start()
             self.clientstack.start()
 
-            self.elector = self.newPrimaryDecider()
-
             # if first time running this node
             if not self.nodestack.remotes:
                 logger.info("{} first time running; waiting for key sharing..."
@@ -636,38 +634,38 @@ class Node(HasActionQueue, Motor, Propagator, MessageProcessor, HasFileStorage,
         self.elector.nodeCount = self.connectedNodeCount
 
         if self.isReady():
-            self.checkInstances()
-            # TODO: Should we only send election messages when lagged or
-            # otherwise too?
-            if isinstance(self.elector, PrimaryElector) and joined:
-                msgs = self.elector.getElectionMsgsForLaggedNodes()
-                logger.debug("{} has msgs {} for new nodes {}".
-                             format(self, msgs, joined))
-                for n in joined:
-                    self.sendElectionMsgsToLaggingNode(n, msgs)
-                    # Communicate current view number if any view change
-                    # happened to the connected node
-                    if self.viewNo > 0:
-                        logger.debug("{} communicating view number {} to {}"
-                                     .format(self, self.viewNo-1, n))
-                        rid = self.nodestack.getRemote(n).uid
-                        self.send(InstanceChange(self.viewNo), rid)
+            # Initiate new primaries election for all the instances
+            # if primaries have gone down for any protocol instances
+            viewChangeScheduled = self.startViewChangeIfNeeded(left)
+
+            if joined and not viewChangeScheduled:
+                self.checkInstances()
+                # TODO: Should we only send election messages when lagged or
+                # otherwise too?
+                if isinstance(self.elector, PrimaryElector):
+                    msgs = self.elector.getElectionMsgsForLaggedNodes()
+                    logger.debug("{} has msgs {} for new nodes {}".
+                                 format(self, msgs, joined))
+                    for joinedNode in joined:
+                        self.sendElectionMsgsToLaggingNode(joinedNode, msgs)
+                        # Communicate current view number if any view change
+                        # happened to the connected node
+                        if self.viewNo > 0:
+                            logger.debug("{} communicating view number {} to {}"
+                                         .format(self, self.viewNo-1,
+                                                 joinedNode))
+                            rid = self.nodestack.getRemote(joinedNode).uid
+                            self.send(InstanceChange(self.viewNo), rid)
 
         # Send ledger status whether ready (connected to enough nodes) or not
-        for n in joined:
-            self.sendPoolLedgerStatus(n)
+        for joinedNode in joined:
+            self.sendPoolLedgerStatus(joinedNode)
             # Send the domain ledger status only when it has discovered enough
             # peers otherwise very few peers will know that this node is lagging
             # behind and it will not receive sufficient consistency proofs to
             # verify the exact state of the ledger.
             if self.mode in (Mode.discovered, Mode.participating):
-                self.sendDomainLedgerStatus(n)
-
-        if isinstance(self.poolManager, TxnPoolManager):
-            # Initiate an election of a new primary if the current primary
-            # has gone down (for each protocol instance)
-            for n in left:
-                self.poolManager.doElectionIfNeeded(n)
+                self.sendDomainLedgerStatus(joinedNode)
 
     def newNodeJoined(self, txn):
         self.setF()
@@ -767,6 +765,21 @@ class Node(HasActionQueue, Motor, Propagator, MessageProcessor, HasFileStorage,
         using a PrimaryDecider.
         """
         self.elector.decidePrimaries()
+
+    def startViewChangeIfNeeded(self, nodesGoingDown):
+        """
+        Starts view change if there are primaries among the nodes which have
+        gone down.
+
+        :param nodesGoingDown: the nodes which have gone down
+        :return: True if view change has been started, False otherwise
+        """
+        for nodeGoingDown in nodesGoingDown:
+            for instId, replica in enumerate(self.replicas):
+                if replica.primaryName == '{}:{}'.format(nodeGoingDown, instId):
+                    self.startViewChange(self.viewNo+1)
+                    return True
+        return False
 
     def createReplica(self, instId: int, isMaster: bool) -> 'replica.Replica':
         """

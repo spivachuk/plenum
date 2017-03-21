@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import os
 
 import collections
@@ -549,7 +550,8 @@ def lxor(a, b):
 
 def getCallableName(callable: Callable):
     # If it is a function or method then access its `__name__`
-    if inspect.isfunction(callable) or inspect.ismethod(callable):
+    if inspect.isfunction(callable) or inspect.ismethod(callable) or \
+            isinstance(callable, functools.partial):
         if hasattr(callable, "__name__"):
             return callable.__name__
         # If it is a partial then access its `func`'s `__name__`
