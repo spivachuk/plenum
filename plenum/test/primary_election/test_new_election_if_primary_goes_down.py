@@ -43,8 +43,8 @@ def test_new_election_if_primary_goes_down(txnPoolNodes, txnPoolNodesLooper,
     A, B, C, D = nodes
 
     for node in nodes:
-        txnPoolNodesLooper.add(node)
-    txnPoolNodesLooper.run(checkNodesConnected(nodes))
+        looper.add(node)
+    looper.run(checkNodesConnected(nodes))
     checkPoolReady(looper, nodes)
     checkProtocolInstanceSetup(looper, nodes, timeout=10)
 
