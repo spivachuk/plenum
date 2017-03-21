@@ -48,10 +48,8 @@ def test_new_election_if_primary_goes_down(txnPoolNodes, txnPoolNodesLooper,
     checkPoolReady(looper, nodes)
     checkProtocolInstanceSetup(looper, nodes, timeout=10)
 
-    assert 0 == A.viewNo
-    assert 0 == B.viewNo
-    assert 0 == C.viewNo
-    assert 0 == D.viewNo
+    for N in nodes:
+        assert 0 == N.viewNo
     primariesBefore = primaries(nodes)
     assert 2 == len(primariesBefore)
     assert A in primariesBefore
@@ -59,9 +57,8 @@ def test_new_election_if_primary_goes_down(txnPoolNodes, txnPoolNodesLooper,
     stopNodes([A], looper)
 
     def assertNewPrimariesElected():
-        assert 1 == B.viewNo
-        assert 1 == C.viewNo
-        assert 1 == D.viewNo
+        for N in [B, C, D]:
+            assert 1 == N.viewNo
         primariesAfter = primaries([B, C, D])
         assert 2 == len(primariesAfter)
 
