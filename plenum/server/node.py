@@ -634,7 +634,7 @@ class Node(HasActionQueue, Motor, Propagator, MessageProcessor, HasFileStorage,
                 self.status = Status.started_hungry
             else:
                 self.status = Status.starting
-        self.elector.nodeCount = self.connectedNodeCount
+            self.elector.nodeCount = self.connectedNodeCount
 
         if self.isReady():
             # Initiate new primaries election for all the instances
