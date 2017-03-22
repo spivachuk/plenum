@@ -183,7 +183,7 @@ class Node(HasActionQueue, Motor, Propagator, MessageProcessor, HasFileStorage,
 
         self.rank = self.getRank(self.name, self.nodeReg)
 
-        self.elector = self.newPrimaryDecider()  # type: PrimaryDecider
+        self.elector = None  # type: PrimaryDecider
 
         self.forwardedRequests = set()  # type: Set[Tuple[(str, int)]]
 
@@ -468,6 +468,8 @@ class Node(HasActionQueue, Motor, Propagator, MessageProcessor, HasFileStorage,
                                       self.config.EnsureLedgerDurability)
             self.nodestack.start()
             self.clientstack.start()
+
+            self.elector = self.newPrimaryDecider()
 
             # if first time running this node
             if not self.nodestack.remotes:
