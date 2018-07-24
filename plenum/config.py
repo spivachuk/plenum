@@ -136,6 +136,17 @@ DashboardUpdateFreq = 5
 ThroughputGraphDuration = 240
 LatencyWindowSize = 30
 LatencyGraphDuration = 240
+
+# This parameter defines minimal count of accumulated latencies for each client
+MIN_LATENCY_COUNT = 10
+
+# Two following parameters define collecting statistic timeout for
+# collecting ordered request and throughput evaluating them.
+# In other words, during ThroughputInnerWindowSize * ThroughputMinActivityThreshold seconds,
+# throughput will returned as None for corresponding getThroughput methods.
+ThroughputInnerWindowSize = 15
+ThroughputMinActivityThreshold = 16
+
 notifierEventTriggeringConfig = {
     'clusterThroughputSpike': {
         'bounds_coeff': 10,
@@ -179,6 +190,10 @@ ToleratePrimaryDisconnection = 2
 # not found enough matching
 ConsistencyProofsTimeout = 5
 
+# Timeout factor after which a node starts requesting ledgerStatus if has
+# not found enough matching
+LedgerStatusTimeout = 5
+
 # Timeout factor after which a node starts requesting transactions
 # We assume, that making consistency proof + iterate over all transactions (getAllTxn)
 # will take a little time (0.003 sec for making cp for 10 000 txns +
@@ -191,7 +206,7 @@ CatchupTransactionsTimeout = 6
 logRotationBackupCount = 150
 logRotationMaxBytes = 100 * 1024 * 1024
 logRotationCompression = "xz"
-logFormat = '{asctime:s} | {levelname:8s} | {filename:20s} ({lineno: >4}) | {funcName:s} | {message:s}'
+logFormat = '{asctime:s}|{levelname:s}|{filename:s}|{message:s}'
 logFormatStyle = '{'
 logLevel = logging.NOTSET
 enableStdOutLogging = True
@@ -225,7 +240,7 @@ Max3PCBatchWait = 1
 
 # Each node keeps a map of PrePrepare sequence numbers and the corresponding
 # txn seqnos that came out of it. Helps in servicing Consistency Proof Requests
-ProcessedBatchMapsToKeep = 100
+ProcessedBatchMapsToKeep = 1000
 
 # After `MaxStateProofSize` requests or `MaxStateProofSize`, whichever is
 # earlier, a signed state proof is sent
@@ -245,7 +260,19 @@ CLIENT_REPLY_TIMEOUT = 15
 CLIENT_MAX_RETRY_ACK = 5
 CLIENT_MAX_RETRY_REPLY = 5
 
+# Connections tracking and stack restart parameters.
+# NOTE: TRACK_CONNECTED_CLIENTS_NUM_ENABLED must be set to True
+# if CLIENT_STACK_RESTART_ENABLED is set to True as stack restart
+# mechanism uses clients connections tracking.
+TRACK_CONNECTED_CLIENTS_NUM_ENABLED = True
+CLIENT_STACK_RESTART_ENABLED = True
+MAX_CONNECTED_CLIENTS_NUM = 10000
+MIN_STACK_RESTART_TIMEOUT = 1800  # seconds
+STACK_POSTRESTART_WAIT_TIME = 2  # seconds
+MAX_STACK_RESTART_TIME_DEVIATION = 300  # seconds
+
 VIEW_CHANGE_TIMEOUT = 600  # seconds
+INITIAL_PROPOSE_VIEW_CHANGE_TIMEOUT = 60
 INSTANCE_CHANGE_TIMEOUT = 60
 MAX_CATCHUPS_DONE_DURING_VIEW_CHANGE = 5
 MIN_TIMEOUT_CATCHUPS_DONE_DURING_VIEW_CHANGE = 300
@@ -287,3 +314,5 @@ ENABLED_PLUGINS = []
 # 1 for recorder
 # 2 during replay
 STACK_COMPANION = 0
+
+ENABLE_INCONSISTENCY_WATCHER_NETWORK = False

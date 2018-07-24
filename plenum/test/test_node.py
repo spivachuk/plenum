@@ -335,6 +335,7 @@ node_spyables = [Node.handleOneNodeMsg,
                  Node.lost_master_primary,
                  Node.propose_view_change,
                  Node.getReplyFromLedger,
+                 Node.getReplyFromLedgerForRequest,
                  Node.recordAndPropagate,
                  Node.allLedgersCaughtUp,
                  Node.start_catchup,
@@ -350,7 +351,8 @@ node_spyables = [Node.handleOneNodeMsg,
                  Node.send_current_state_to_lagging_node,
                  Node.process_current_state_message,
                  Node.transmitToClient,
-                 Node.has_ordered_till_last_prepared_certificate
+                 Node.has_ordered_till_last_prepared_certificate,
+                 Node.on_inconsistent_3pc_state
                  ]
 
 
@@ -384,6 +386,7 @@ class TestNode(TestNodeCore, Node):
             ownedByNode=True,
             postAllLedgersCaughtUp=self.allLedgersCaughtUp,
             preCatchupClbk=self.preLedgerCatchUp,
+            postCatchupClbk=self.postLedgerCatchUp,
             ledger_sync_order=self.ledger_ids
         )
 
@@ -405,11 +408,7 @@ class TestNode(TestNodeCore, Node):
         pass
 
     def restart_clientstack(self):
-        logger.debug("Stopping clientstack on node {}".format(self))
-        self.clientstack.stop()
-        time.sleep(0.2)
-        logger.debug("Starting clientstack on node {}".format(self))
-        self.clientstack.start()
+        self.clientstack.restart()
 
 
 elector_spyables = [
@@ -444,7 +443,8 @@ view_changer_spyables = [
     ViewChanger.sendInstanceChange,
     ViewChanger._start_view_change_if_possible,
     ViewChanger.process_instance_change_msg,
-    ViewChanger.startViewChange
+    ViewChanger.startViewChange,
+    ViewChanger.process_future_view_vchd_msg
 ]
 
 
